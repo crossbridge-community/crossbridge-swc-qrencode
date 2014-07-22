@@ -5,11 +5,13 @@ import flash.events.Event;
 import flash.text.TextField;
 
 import sample.qrencode.CModule;
+import sample.qrencode.*;
+import sample.qrencode.vfs.ISpecialFile;
 
 import flash.display.Sprite;
 
 [SWF(width="800", height="600", backgroundColor="#333333", frameRate="60")]
-class Main extends Sprite {
+public class Main extends Sprite /*implements ISpecialFile*/ {
 
     internal var uic:Sprite;
     internal var bm:Bitmap;
