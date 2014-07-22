@@ -56,7 +56,6 @@ class Main extends Sprite {
         bm.smoothing = false
         bm.scaleX = bm.scaleY = 2
         uic.addChild(bm)
-        // initTesting();
     }
 
     private function errorCorrectionCodeName(val:String):String {
