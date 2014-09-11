@@ -19,8 +19,7 @@ int encodeAndCheckBStream(int mqr, int version, QRecLevel level, QRencodeMode mo
 		input = QRinput_new2(version, level);
 	}
 	QRinput_append(input, mode, strlen(data), (unsigned char *)data);
-	bstream = BitStream_new();
-	QRinput_getBitStream(input, bstream);
+	bstream = QRinput_getBitStream(input);
 	ret = cmpBin(correct, bstream);
 	if(ret) {
 		printf("result : ");
@@ -45,8 +44,7 @@ int mergeAndCheckBStream(int mqr, QRencodeMode mode, char *data, char *correct)
 		input = QRinput_new();
 	}
 	QRinput_append(input, mode, strlen(data), (unsigned char *)data);
-	bstream = BitStream_new();
-	QRinput_mergeBitStream(input, bstream);
+	bstream = QRinput_mergeBitStream(input);
 	ret = cmpBin(correct, bstream);
 
 	QRinput_free(input);
@@ -84,9 +82,8 @@ void test_encode8_versionup(void)
 	str = (char *)malloc(2900);
 	memset(str, 0xff, 2900);
 	stream = QRinput_new();
-	bstream = BitStream_new();
 	QRinput_append(stream, QR_MODE_8, 2900, (unsigned char *)str);
-	QRinput_mergeBitStream(stream, bstream);
+	bstream = QRinput_mergeBitStream(stream);
 	version = QRinput_getVersion(stream);
 	assert_equal(version, 40, "Version is %d (40 expected).\n", version);
 	testFinish();
@@ -137,9 +134,8 @@ void test_encodeNumeric_versionup(void)
 	str = (char *)malloc(1050);
 	memset(str, '1', 1050);
 	stream = QRinput_new2(0, QR_ECLEVEL_L);
-	bstream = BitStream_new();
 	QRinput_append(stream, QR_MODE_NUM, 1050, (unsigned char *)str);
-	QRinput_mergeBitStream(stream, bstream);
+	bstream = QRinput_mergeBitStream(stream);
 	version = QRinput_getVersion(stream);
 	assert_equal(version, 14, "Version is %d (14 expected).", version);
 	testFinish();
@@ -199,8 +195,7 @@ void test_padding(void)
 	testStart("Padding bit check. (less than 5 bits)");
 	input = QRinput_new2(1, QR_ECLEVEL_L);
 	QRinput_append(input, QR_MODE_8, 17, (unsigned char *)data);
-	bstream = BitStream_new();
-	QRinput_getBitStream(input, bstream);
+	bstream = QRinput_getBitStream(input);
 	size = BitStream_size(bstream);
 	assert_equal(size, 152, "# of bit is incorrect (%d != 152).\n", size);
 	c = 0;
@@ -239,8 +234,7 @@ void test_padding2(void)
 
 	input = QRinput_new2(1, QR_ECLEVEL_L);
 	QRinput_append(input, QR_MODE_8, 16, (unsigned char *)data);
-	bstream = BitStream_new();
-	QRinput_getBitStream(input, bstream);
+	bstream = QRinput_getBitStream(input);
 	size = BitStream_size(bstream);
 	assert_equal(size, 152, "16byte: # of bit is incorrect (%d != 152).\n", size);
 	ret = ncmpBin(correct, bstream, 152);
@@ -257,8 +251,7 @@ void test_padding2(void)
 
 	input = QRinput_new2(1, QR_ECLEVEL_L);
 	QRinput_append(input, QR_MODE_8, 15, (unsigned char *)data);
-	bstream = BitStream_new();
-	QRinput_getBitStream(input, bstream);
+	bstream = QRinput_getBitStream(input);
 	size = BitStream_size(bstream);
 	assert_equal(size, 152, "15byte: # of bit is incorrect (%d != 152).\n", size);
 	ret = ncmpBin(correct, bstream, 152);
@@ -289,6 +282,27 @@ void test_encodeNumeric3(void)
 	testEnd(mergeAndCheckBStream(0, QR_MODE_NUM, str, correct));
 }
 
+void test_encodeTooLong(void)
+{
+	QRinput *stream;
+	unsigned char *data;
+	BitStream *bstream;
+
+	data = (unsigned char *)malloc(4297);
+	memset(data, 'A', 4297);
+
+	testStart("Encoding long string. (4297 bytes of alphanumeric)");
+	stream = QRinput_new();
+	QRinput_append(stream, QR_MODE_AN, 4297, data);
+	bstream = QRinput_mergeBitStream(stream);
+	testEndExp(bstream == NULL);
+	QRinput_free(stream);
+	if(bstream != NULL) {
+		BitStream_free(bstream);
+	}
+	free(data);
+}
+
 void test_encodeAnNum(void)
 {
 	QRinput *input;
@@ -298,8 +312,7 @@ void test_encodeAnNum(void)
 	input = QRinput_new();
 	QRinput_append(input, QR_MODE_AN, 11, (unsigned char *)"ABCDEFGHIJK");
 	QRinput_append(input, QR_MODE_NUM, 12, (unsigned char *)"123456789012");
-	bstream = BitStream_new();
-	QRinput_mergeBitStream(input, bstream);
+	bstream = QRinput_mergeBitStream(input);
 	testEndExp(BitStream_size(bstream) == 128);
 	QRinput_free(input);
 	BitStream_free(bstream);
@@ -307,8 +320,7 @@ void test_encodeAnNum(void)
 	testStart("Bit length check of alphabet stream. (23)");
 	input = QRinput_new();
 	QRinput_append(input, QR_MODE_AN, 23, (unsigned char *)"ABCDEFGHIJK123456789012");
-	bstream = BitStream_new();
-	QRinput_mergeBitStream(input, bstream);
+	bstream = QRinput_mergeBitStream(input);
 	testEndExp(BitStream_size(bstream) == 140);
 	QRinput_free(input);
 	BitStream_free(bstream);
@@ -356,11 +368,10 @@ void test_insertStructuredAppendHeader(void)
 
 	testStart("Insert a structured-append header");
 	stream = QRinput_new();
-	bstream = BitStream_new();
 	QRinput_append(stream, QR_MODE_8, 1, (unsigned char *)"A");
 	ret = QRinput_insertStructuredAppendHeader(stream, 16, 1, 0xa5);
 	assert_zero(ret, "QRinput_insertStructuredAppendHeader() returns nonzero.\n");
-	QRinput_mergeBitStream(stream, bstream);
+	bstream = QRinput_mergeBitStream(stream);
 	assert_nonnull(bstream->data, "Bstream->data is null.");
 	assert_zero(cmpBin(correct, bstream), "bitstream is wrong.");
 	testFinish();
@@ -430,8 +441,7 @@ static int check_lengthOfCode(QRencodeMode mode, char *data, int size, int versi
 	input = QRinput_new();
 	QRinput_setVersion(input, version);
 	QRinput_append(input, mode, size, (unsigned char *)data);
-	b = BitStream_new();
-	QRinput_mergeBitStream(input, b);
+	b = QRinput_mergeBitStream(input);
 	bits = BitStream_size(b);
 	bytes = QRinput_lengthOfCode(mode, version, bits);
 	QRinput_free(input);
@@ -497,8 +507,7 @@ void test_struct_split_example(void)
 	e = s->head;
 	i = 0;
 	while(e != NULL) {
-		bstream = BitStream_new();
-		QRinput_mergeBitStream(e->input, bstream);
+		bstream = QRinput_mergeBitStream(e->input);
 		BitStream_free(bstream);
 		l = e->input->head->next;
 		assert_equal(l->mode, QR_MODE_8, "#%d: wrong mode (%d).\n", i, l->mode);
@@ -553,6 +562,26 @@ void test_struct_split_invalidVersion(void)
 	if(s != NULL) QRinput_Struct_free(s);
 	QRinput_free(input);
 	free(str);
+}
+
+void test_struct_singlestructure(void)
+{
+	QRinput *input;
+	QRinput_Struct *s;
+	char *str = "TEST";
+
+	testStart("Testing structured-append symbols. (single structure)");
+	input = QRinput_new2(10, QR_ECLEVEL_H);
+	QRinput_append(input, QR_MODE_AN, strlen(str), (unsigned char *)str);
+	s = QRinput_splitQRinputToStruct(input);
+	assert_nonnull(s, "must return a code.");
+	assert_equal(s->size, 1, "size must be 1, but %d returned.", s->size);
+	if(s->size != 1) {
+		printQRinputStruct(s);
+	}
+	testFinish();
+	if(s != NULL) QRinput_Struct_free(s);
+	QRinput_free(input);
 }
 
 void test_splitentry(void)
@@ -918,8 +947,7 @@ void test_encodeECI(void)
 
 	ret = QRinput_append(input, QR_MODE_8, 5, str);
 	assert_zero(ret, "Failed to append characters.\n");
-	bstream = BitStream_new();
-	QRinput_mergeBitStream(input, bstream);
+	bstream = QRinput_mergeBitStream(input);
 	assert_nonnull(bstream, "Failed to merge.\n");
 	if(bstream != NULL) {
 		ret = ncmpBin(correct, bstream, 64);
@@ -938,6 +966,7 @@ int main(void)
 	test_encodeNumeric_versionup();
 	test_encode8();
 	test_encode8_versionup();
+	test_encodeTooLong();
 	test_encodeAn();
 	test_encodeAn2();
 	test_encodeKanji();
@@ -957,6 +986,7 @@ int main(void)
 	test_struct_split_example();
 	test_struct_split_tooLarge();
 	test_struct_split_invalidVersion();
+	test_struct_singlestructure();
 	test_parity();
 	test_parity2();
 	test_null_free();

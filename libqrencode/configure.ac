@@ -1,6 +1,6 @@
 m4_define([__MAJOR_VERSION], [3])dnl
-m4_define([__MINOR_VERSION], [9])dnl
-m4_define([__MICRO_VERSION], [0])dnl
+m4_define([__MINOR_VERSION], [4])dnl
+m4_define([__MICRO_VERSION], [4])dnl
 m4_define([__VERSION], [__MAJOR_VERSION.__MINOR_VERSION.__MICRO_VERSION])dnl
 AC_INIT(QRencode, __VERSION)
 
@@ -82,7 +82,8 @@ fi
 
 if test x$build_tests = xyes ; then
 	SDL_REQUIRED_VERSION=1.2.0
-	PKG_CHECK_MODULES(SDL, [sdl >= $SDL_REQUIRED_VERSION])
+	AM_PATH_SDL($SDL_REQUIRED_VERSION,,AC_MSG_WARN([*** SDL $SDL_REQUIRED_VERSION or better is required.]))
+	AC_MSG_NOTICE([SDL check done.])
 	AM_ICONV_LINK
 fi
 AM_CONDITIONAL(HAVE_SDL, [test "x$SDL_CFLAGS" != "x" ])

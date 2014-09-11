@@ -32,12 +32,9 @@ all: check
 	@echo "-------- Example: libQREncode -------"
 	cd libqrencode && "$(FLASCC)/usr/bin/swig" -as3  -I. -module QREncode -outdir . -includeall -ignoremissing as3api.h
 	cd libqrencode && $(ASC2) -import $(call nativepath,$(FLASCC)/usr/lib/builtin.abc) -import $(call nativepath,$(FLASCC)/usr/lib/playerglobal.abc) QREncode.as
-	cd libqrencode && "$(FLASCC)/usr/bin/gcc" $(BASE_CFLAGS) -Wno-error $(OPT_CFLAGS) as3api_wrap.c bitstream.c mask.c mmask.c mqrspec.c qrencode.c qrinput.c qrspec.c rsecc.c split.c QREncode.abc -emit-swc=sample.qrencode -o ../qrencode.swc $(EXTRACFLAGS)
+	cd libqrencode && "$(FLASCC)/usr/bin/gcc" $(BASE_CFLAGS) -Wno-error $(OPT_CFLAGS) as3api_wrap.c bitstream.c mask.c mmask.c mqrspec.c qrencode.c qrinput.c qrspec.c rscode.c split.c QREncode.abc -emit-swc=sample.qrencode -o ../qrencode.swc $(EXTRACFLAGS)
 	#@echo "Compiling test app using SWC:"
-	#"$(FLEX)/bin/mxmlc" -library-path+=qrencode.swc Main.as -debug=$(MXMLC_DEBUG) -o qrencoder.swf
-
-debug:
-	make T10 OPT_CFLAGS="-O0 -g" MXMLC_DEBUG=true
+	"$(FLEX)/bin/mxmlc" -library-path+=qrencode.swc Main.as -debug=$(MXMLC_DEBUG) -o qrencoder.swf
 
 include Makefile.common
 

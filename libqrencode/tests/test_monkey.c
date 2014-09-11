@@ -140,8 +140,7 @@ void test_encode_an(int num)
 
 		snprintf(buf, 256, "monkey-orig-bits-%d.dat", num);
 		fp = fopen(buf, "w");
-		bstream = BitStream_new();
-		QRinput_mergeBitStream(input, bstream);
+		bstream = QRinput_mergeBitStream(input);
 		c = 0;
 		for(x=0; x<bstream->length; x++) {
 			fputc((bstream->data[x]&1)?'1':'0', fp);

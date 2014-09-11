@@ -36,8 +36,12 @@ public class Main extends Sprite /*implements ISpecialFile*/ {
     }
 
     internal function runScript(event:Event):void {
-        var qrcode:QRcode = new QRcode()
-        qrcode.swigCPtr = QREncode.QRcode_encodeString(srctext.text, vers.value, ecc.value, QREncode.QR_MODE_8, 1)
+        var qrcode:QRcode = QRcode.create()
+        // vers: maximum="40" minimum="1" value="15" 
+        // ecc: maximum="3" value="2" 
+        var vers:int = 15;
+        var ecc:int = 2;
+        qrcode.swigCPtr = QREncode.QRcode_encodeString(srctext.text, vers, ecc, QREncode.QR_MODE_8, 1)
 
         if (qrcode.swigCPtr == 0 || qrcode.width <= 0) {
             return

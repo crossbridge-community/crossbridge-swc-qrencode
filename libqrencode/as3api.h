@@ -13,13 +13,16 @@
 %{
 #include "AS3/AS3.h"
 #include "qrencode.h"
+#include "qrinput.h"
 
 int main() {
 AS3_GoAsync();
 }
 
 %}
+
+%include "qrencode.h"
+%include "qrinput.h"
+
 #endif
 
-
-#include "qrencode.h"

@@ -43,7 +43,7 @@ void printQRinputInfo(QRinput *input)
 {
 	QRinput_List *list;
 	BitStream *b;
-	int i, ret;
+	int i;
 
 	printf("QRinput info:\n");
 	printf(" version: %d\n", input->version);
@@ -55,9 +55,8 @@ void printQRinputInfo(QRinput *input)
 		list = list->next;
 	}
 	printf("  chunks: %d\n", i);
-	b = BitStream_new();
-	ret = QRinput_mergeBitStream(input, b);
-	if(ret == 0) {
+	b = QRinput_mergeBitStream(input);
+	if(b != NULL) {
 		printf("  bitstream-size: %d\n", BitStream_size(b));
 		BitStream_free(b);
 	}
@@ -68,6 +67,20 @@ void printQRinputInfo(QRinput *input)
 		printf("\t#%d: mode = %s, size = %d\n", i, modeStr[list->mode], list->size);
 		i++;
 		list = list->next;
+	}
+}
+
+void printQRinputStruct(QRinput_Struct *s)
+{
+	QRinput_InputList *list;
+	int i = 1;
+
+	printf("Struct size: %d\n", s->size);
+	printf("Struct parity: %08x\n", s->parity);
+	for(list = s->head; list != NULL; list = list->next) {
+		printf("Symbol %d - ", i);
+		printQRinputInfo(list->input);
+		i++;
 	}
 }
 

@@ -31,7 +31,7 @@
 #include "mqrspec.h"
 #include "bitstream.h"
 #include "qrinput.h"
-#include "rsecc.h"
+#include "rscode.h"
 #include "split.h"
 #include "mask.h"
 #include "mmask.h"
@@ -59,14 +59,14 @@ typedef struct {
 	int count;
 } QRRawCode;
 
-static void RSblock_initBlock(RSblock *block, int dl, unsigned char *data, int el, unsigned char *ecc)
+static void RSblock_initBlock(RSblock *block, int dl, unsigned char *data, int el, unsigned char *ecc, RS *rs)
 {
 	block->dataLength = dl;
 	block->data = data;
 	block->eccLength = el;
 	block->ecc = ecc;
 
-	RSECC_encode(dl, el, data, ecc);
+	encode_rs_char(rs, data, ecc);
 }
 
 static int RSblock_init(RSblock *blocks, int spec[5], unsigned char *data, unsigned char *ecc)
@@ -74,16 +74,19 @@ static int RSblock_init(RSblock *blocks, int spec[5], unsigned char *data, unsig
 	int i;
 	RSblock *block;
 	unsigned char *dp, *ep;
+	RS *rs;
 	int el, dl;
 
 	dl = QRspec_rsDataCodes1(spec);
 	el = QRspec_rsEccCodes1(spec);
+	rs = init_rs(8, 0x11d, 0, 1, el, 255 - dl - el);
+	if(rs == NULL) return -1;
 
 	block = blocks;
 	dp = data;
 	ep = ecc;
 	for(i=0; i<QRspec_rsBlockNum1(spec); i++) {
-		RSblock_initBlock(block, dl, dp, el, ep);
+		RSblock_initBlock(block, dl, dp, el, ep, rs);
 		dp += dl;
 		ep += el;
 		block++;
@@ -93,8 +96,10 @@ static int RSblock_init(RSblock *blocks, int spec[5], unsigned char *data, unsig
 
 	dl = QRspec_rsDataCodes2(spec);
 	el = QRspec_rsEccCodes2(spec);
+	rs = init_rs(8, 0x11d, 0, 1, el, 255 - dl - el);
+	if(rs == NULL) return -1;
 	for(i=0; i<QRspec_rsBlockNum2(spec); i++) {
-		RSblock_initBlock(block, dl, dp, el, ep);
+		RSblock_initBlock(block, dl, dp, el, ep, rs);
 		dp += dl;
 		ep += el;
 		block++;
@@ -206,6 +211,7 @@ __STATIC void MQRraw_free(MQRRawCode *raw);
 __STATIC MQRRawCode *MQRraw_new(QRinput *input)
 {
 	MQRRawCode *raw;
+	RS *rs;
 
 	raw = (MQRRawCode *)malloc(sizeof(MQRRawCode));
 	if(raw == NULL) return NULL;
@@ -232,7 +238,13 @@ __STATIC MQRRawCode *MQRraw_new(QRinput *input)
 		return NULL;
 	}
 
-	RSblock_initBlock(raw->rsblock, raw->dataLength, raw->datacode, raw->eccLength, raw->ecccode);
+	rs = init_rs(8, 0x11d, 0, 1, raw->eccLength, 255 - raw->dataLength - raw->eccLength);
+	if(rs == NULL) {
+		MQRraw_free(raw);
+		return NULL;
+	}
+
+	RSblock_initBlock(raw->rsblock, raw->dataLength, raw->datacode, raw->eccLength, raw->ecccode, rs);
 
 	raw->count = 0;
 
@@ -916,4 +928,5 @@ void QRcode_clearCache(void)
 {
 	QRspec_clearCache();
 	MQRspec_clearCache();
+	free_rs_cache();
 }

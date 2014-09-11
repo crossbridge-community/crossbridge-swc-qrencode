@@ -99,16 +99,16 @@
 #ifndef __QRENCODE_H__
 #define __QRENCODE_H__
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 #ifdef __AVM2__
 #define __STATIC static
-#define MAJOR_VERSION 1
-#define MINOR_VERSION 0
-#define MICRO_VERSION 0
-#define VERSION 1
+#define MAJOR_VERSION 4
+#define MINOR_VERSION 3
+#define MICRO_VERSION 3
+#define VERSION "4.3.3"
+#endif
+
+#if defined(__cplusplus)
+extern "C" {
 #endif
 
 /**

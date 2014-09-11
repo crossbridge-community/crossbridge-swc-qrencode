@@ -1,82 +1,23 @@
-2014.06.22 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* qrencode.c:
-	  - A memory leak bug has been fixed. (Thanks to @win32asm)
-	* bitstream.c:
-	  - Check return value of BitStream_expand. (PR #46, Thanks to @tklauser)
-
-2014.02.14 Kentaro FUKUCHI <kentaro@fukuchi.org>
+2014.07.24 Kentaro FUKUCHI <kentaro@fukuchi.org>
 	* qrinput.c:
-	  - Minor documentation fix.
-	* qrenc.c:
-	  - Error message improved.
-
-2014.02.09 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* .travis.yaml:
-	  - Configuration file for Travis CI. (Thanks to Danil Dörrhöfer)
-	* configure.ac:
-	  - Fixed some warnings.
-
-2014.01.15 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* qrenc.c:
-	  - Merged pull request 78d44fd - commandline argument --help and -V is
-	    printed to stdout, instead of stderr.
-
-2014.01.04 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* rsecc.[ch]:
-	  - Code cleanups.
-
-2013.10.27 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* qrinput.c:
-	  - Bug in QRinput_insertFNC1Header() has been fixed. (Thanks to David
-	    Binderman)
-	* qrinput.c, test/decoder.[ch]:
-	  - Code cleanup.
-
-2013.09.08 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* tests/test_qrencode.c:
-	  - Small bug fix.
-
-2013.09.06 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* qrenc.c:
-	  - bzero() has been replaced with memset(). (Thanks to Gavin Andresen)
-	* qrspec.c, qrinput.c:
-	  - QRspec_getMinimumVersion() now returns maximum version number for
-	    excessive input, instead of -1. Closes #31. (Thanks to Danil
-		Dörrhöfer)
-	* tests/test_qrencode.c:
-	  - New tests for excessive or maximum input have been added.
+	  - Code refactoring (QRinput_Struct_count has been added).
+	  - And more code cleanups.
+	  - Avoid to add a Structued-append chunk when only one symbol is
+	    generated.
 	* tests/test_qrinput.c:
-	  - A deprecatd test has been removed.
-	[reduce_malloc]
-	* bitstream.c:
-	  - Minimum length of bit buffer has been extended to 128. In many cases
-	    the library needs 128 bits at least to generate a symbol.
-	[master]
-	* merged reduce_malloc branch.
+	  - New test has been added.
+	* qrinput.c, qrencode.1.in:
+	  - Added new option, "verbose".
+	* tests/common.h:
+	  - printQRinputStruct() has been added.
+	[3.4]
+	  - Bumped verstion to 3.4.4.
+	* Version 3.4.4 has been released.
 
-2013.08.22 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* configure.ac:
-	  - Avoid to use sdl-config. (Thanks to Heiko Becker)
-
-2013.08.15 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* rsecc.[ch], qrencode.c, tests/test_rc.c:
-	  - Code cleanups and refactoring.
-	  - Bug fix.
-	* configure.ac:
-	  - Bumped version to 3.9.0, preparing for major update.
-	* qrenc.c:
-	  - Copyright year in usage has been updated.
-	  - Help message improved.
-
-2013.08.15 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* rsecc.[ch], rscode.[ch], Makefile.am, qrencode.c:
-	  - Reed-Solomon error correction code has been completely rewritten.
-	  - Phil Karn's code has been removed (moved to tests).
-	* tests/test_rs.c, tests/test_qrencode.c, tests/rscode.[ch], tests/Makefile.am:
-	  - Test codes related to ECC have been updated.
-	  - Phil Karn's code has been moved to tests, just for test purpose.
-	* tests/test_mqrspec.c:
-	  - Code cleanup.
+2014.06.27 Kentaro FUKUCHI <kentaro@fukuchi.org>
+	* qrenc.c, qrencode.1.in:
+	  - Merged pull-request #44. (Thanks to Antenore)
+	  - Fixed some format issues.
 
 2013.07.29 Kentaro FUKUCHI <kentaro@fukuchi.org>
 	[3.4]
@@ -151,10 +92,6 @@
 	  - Added NUL checks for malloc-related bugs using failmalloc.
 	  - Added a new test for issue #25. (Thanks to vlad417)
 
-2012.10.21 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	* qrinput.c:
-	  - Unnecessary "goto ABORT" eliminated.
-
 2012.10.17 Kentaro FUKUCHI <kentaro@fukuchi.org>
 	[3.4]
 	* NEWS:
@@ -194,21 +131,6 @@
 	  - Usage improved.
 	  - Inkscape-friendly SVG output.
 
-2012.09.29 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	[reduce_malloc]
-	* bstream.h:
-	  - Added a new function "BitStream_reset()".
-	* qrinput.c:
-	  - Reduced the use of dynamic memory allocation.
-	  - Performance improved.
-	  - Interfaces of QRinput_getBitStream() and QRinput_mergeBitStream() have
-	    been changed.
-
-2012.09.25 Kentaro FUKUCHI <kentaro@fukuchi.org>
-	[reduce_malloc]
-	* qrinput.c, tests/qrinput.c:
-	  - Reduced the use of dynamic memory allocation.
-
 2012.09.25 Kentaro FUKUCHI <kentaro@fukuchi.org>
 	* qrenc.c:
 	  - Input validation improved. (Thanks to Yann Droneaud)
@@ -221,9 +143,6 @@
 	  - Added new test.
 	* tests/test_{monkey,qrspec}.c:
 	  - Warnings suppressed.
-	[reduce_malloc]
-	* bitstream.[ch]:
-	  - Reduced the use of dynamic memory allocation.
 
 2012.09.22 Kentaro FUKUCHI <kentaro@fukuchi.org>
 	* qrenc.c:
@@ -823,7 +742,7 @@
 	* Bumped version to 3.1.0.
 
 2009.04.30 Kentaro FUKUCHI <fukuchi@megaui.net>
-	* bitstream.[ch]:
+	* bistream.[ch]:
 	  - Internal representation of BitStream has been changed from
 	    NUL-terminated string to unsigned char array.
 	* tests/common.h, tests/test_{bitstream,qrinput}.c:

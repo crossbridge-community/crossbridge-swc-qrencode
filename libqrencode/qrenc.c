@@ -27,7 +27,6 @@
 #include <string.h>
 #include <png.h>
 #include <getopt.h>
-#include <errno.h>
 
 #include "qrencode.h"
 
@@ -46,6 +45,8 @@ static QRecLevel level = QR_ECLEVEL_L;
 static QRencodeMode hint = QR_MODE_8;
 static unsigned int fg_color[4] = {0, 0, 0, 255};
 static unsigned int bg_color[4] = {255, 255, 255, 255};
+
+static int verbose = 0;
 
 enum imageType {
 	PNG_TYPE,
@@ -77,23 +78,23 @@ static const struct option options[] = {
 	{"8bit"         , no_argument      , NULL, '8'},
 	{"rle"          , no_argument      , &rle,   1},
 	{"micro"        , no_argument      , NULL, 'M'},
-	{"foreground"	, required_argument, NULL, 'f'},
-	{"background"	, required_argument, NULL, 'b'},
+	{"foreground"   , required_argument, NULL, 'f'},
+	{"background"   , required_argument, NULL, 'b'},
 	{"version"      , no_argument      , NULL, 'V'},
+	{"verbose"      , no_argument      , &verbose, 1},
 	{NULL, 0, NULL, 0}
 };
 
 static char *optstring = "ho:l:s:v:m:d:t:Skci8MV";
 
-static void usage(int help, int longopt, int status)
+static void usage(int help, int longopt)
 {
-	FILE *out = status ? stderr : stdout;
-	fprintf(out,
+	fprintf(stderr,
 "qrencode version %s\n"
-"Copyright (C) 2006-2014 Kentaro Fukuchi\n", QRcode_APIVersionString());
+"Copyright (C) 2006-2012 Kentaro Fukuchi\n", QRcode_APIVersionString());
 	if(help) {
 		if(longopt) {
-			fprintf(out,
+			fprintf(stderr,
 "Usage: qrencode [OPTION]... [STRING]\n"
 "Encode input data in a QR Code and save as a PNG or EPS image.\n\n"
 "  -h, --help   display the help message. -h displays only the help of short\n"
@@ -102,19 +103,21 @@ static void usage(int help, int longopt, int status)
 "               write image to FILENAME. If '-' is specified, the result\n"
 "               will be output to standard output. If -S is given, structured\n"
 "               symbols are written to FILENAME-01.png, FILENAME-02.png, ...\n"
-"               (suffix is removed from FILENAME, if specified)\n\n"
+"               (suffix is removed from FILENAME, if specified)\n"
 "  -s NUMBER, --size=NUMBER\n"
 "               specify module size in dots (pixels). (default=3)\n\n"
 "  -l {LMQH}, --level={LMQH}\n"
 "               specify error correction level from L (lowest) to H (highest).\n"
 "               (default=L)\n\n"
 "  -v NUMBER, --symversion=NUMBER\n"
-"               specify the version of the symbol. (default=auto)\n\n"
+"               specify the version of the symbol. See SYMBOL VERSIONS for more\n"
+"               information. (default=auto)\n\n"
 "  -m NUMBER, --margin=NUMBER\n"
-"               specify the width of the margins. (default=4 (2 for Micro)))\n\n"
+"               specify the width of the margins. (default=4 (2 for Micro QR)))\n\n"
 "  -d NUMBER, --dpi=NUMBER\n"
 "               specify the DPI of the generated PNG. (default=72)\n\n"
-"  -t {PNG,EPS,SVG,ANSI,ANSI256,ASCII,ASCIIi,UTF8,ANSIUTF8}, --type={...}\n"
+"  -t {PNG,EPS,SVG,ANSI,ANSI256,ASCII,ASCIIi,UTF8,ANSIUTF8}, --type={PNG,EPS,\n"
+"               SVG,ANSI,ANSI256,ASCII,ASCIIi,UTF8,ANSIUTF8}\n"
 "               specify the type of the generated image. (default=PNG)\n\n"
 "  -S, --structured\n"
 "               make structured symbols. Version must be specified.\n\n"
@@ -130,14 +133,25 @@ static void usage(int help, int longopt, int status)
 "      --background=RRGGBB[AA]\n"
 "               specify foreground/background color in hexadecimal notation.\n"
 "               6-digit (RGB) or 8-digit (RGBA) form are supported.\n"
-"               Color output support available only in PNG and SVG.\n\n"
+"               Color output support available only in PNG and SVG.\n"
 "  -V, --version\n"
 "               display the version number and copyrights of the qrencode.\n\n"
+"      --verbose\n"
+"               display verbose information to stderr.\n\n"
 "  [STRING]     input data. If it is not specified, data will be taken from\n"
-"               standard input.\n"
+"               standard input.\n\n"
+"*SYMBOL VERSIONS\n"
+"               The symbol versions of QR Code range from Version 1 to Version\n"
+"               40. Each version has a different module configuration or number\n"
+"               of modules, ranging from Version 1 (21 x 21 modules) up to\n"
+"               Version 40 (177 x 177 modules). Each higher version number\n"
+"               comprises 4 additional modules per side by default. See\n"
+"               http://www.qrcode.com/en/about/version.html for a detailed\n"
+"               version list.\n"
+
 			);
 		} else {
-			fprintf(out,
+			fprintf(stderr,
 "Usage: qrencode [OPTION]... [STRING]\n"
 "Encode input data in a QR Code and save as a PNG or EPS image.\n\n"
 "  -h           display this message.\n"
@@ -160,10 +174,14 @@ static void usage(int help, int longopt, int status)
 "  -i           ignore case distinctions and use only upper-case characters.\n"
 "  -8           encode entire data in 8-bit mode. -k, -c and -i will be ignored.\n"
 "  -M           encode in a Micro QR Code.\n"
+"  --foreground=RRGGBB[AA]\n"
+"  --background=RRGGBB[AA]\n"
+"               specify foreground/background color in hexadecimal notation.\n"
+"               6-digit (RGB) or 8-digit (RGBA) form are supported.\n"
+"               Color output support available only in PNG and SVG.\n"
 "  -V           display the version number and copyrights of the qrencode.\n"
 "  [STRING]     input data. If it is not specified, data will be taken from\n"
-"               standard input.\n\n"
-"  Try \"qrencode --help\" for more options.\n"
+"               standard input.\n"
 			);
 		}
 	}
@@ -578,7 +596,7 @@ static int writeANSI(QRcode *qrcode, const char *outfile)
 	for(y=0; y<qrcode->width; y++) {
 		row = (p+(y*qrcode->width));
 
-		memset(buffer, 0, buffer_s);
+		bzero( buffer, buffer_s );
 		strncpy( buffer, white, white_s );
 		for(x=0; x<margin; x++ ){
 			strncat( buffer, "  ", 2 );
@@ -804,13 +822,14 @@ static void qrencode(const unsigned char *intext, int length, const char *outfil
 	
 	qrcode = encode(intext, length);
 	if(qrcode == NULL) {
-		if(errno == ERANGE) {
-			fprintf(stderr, "Failed to encode the input data: Input data too large\n");
-		} else {
-			perror("Failed to encode the input data");
-		}
+		perror("Failed to encode the input data");
 		exit(EXIT_FAILURE);
 	}
+
+	if(verbose) {
+		fprintf(stderr, "File: %s, Version: %d\n", (outfile!=NULL)?outfile:"(stdout)", qrcode->version);
+	}
+
 	switch(image_type) {
 		case PNG_TYPE:
 			writePNG(qrcode, outfile);
@@ -841,6 +860,7 @@ static void qrencode(const unsigned char *intext, int length, const char *outfil
 			fprintf(stderr, "Unknown image type.\n");
 			exit(EXIT_FAILURE);
 	}
+
 	QRcode_free(qrcode);
 }
 
@@ -908,11 +928,7 @@ static void qrencodeStructured(const unsigned char *intext, int length, const ch
 	
 	qrlist = encodeStructured(intext, length);
 	if(qrlist == NULL) {
-		if(errno == ERANGE) {
-			fprintf(stderr, "Failed to encode the input data: Input data too large\n");
-		} else {
-			perror("Failed to encode the input data");
-		}
+		perror("Failed to encode the input data");
 		exit(EXIT_FAILURE);
 	}
 
@@ -926,6 +942,11 @@ static void qrencodeStructured(const unsigned char *intext, int length, const ch
 		} else {
 			snprintf(filename, FILENAME_MAX, "%s-%02d", base, i);
 		}
+
+		if(verbose) {
+			fprintf(stderr, "File: %s, Version: %d\n", filename, p->code->version);
+		}
+
 		switch(image_type) {
 			case PNG_TYPE: 
 				writePNG(p->code, filename);
@@ -979,9 +1000,9 @@ int main(int argc, char **argv)
 		switch(opt) {
 			case 'h':
 				if(lindex == 0) {
-					usage(1, 1, EXIT_SUCCESS);
+					usage(1, 1);
 				} else {
-					usage(1, 0, EXIT_SUCCESS);
+					usage(1, 0);
 				}
 				exit(EXIT_SUCCESS);
 				break;
@@ -1079,9 +1100,6 @@ int main(int argc, char **argv)
 			case '8':
 				eightbit = 1;
 				break;
-			case 'r':
-				rle = 1;
-				break;
 			case 'M':
 				micro = 1;
 				break;
@@ -1098,21 +1116,21 @@ int main(int argc, char **argv)
 				}
 				break;
 			case 'V':
-				usage(0, 0, EXIT_SUCCESS);
+				usage(0, 0);
 				exit(EXIT_SUCCESS);
 				break;
 			case 0:
 				break;
 			default:
-				fprintf(stderr, "Try \"qrencode --help\" for more information.\n");
+				fprintf(stderr, "Try `qrencode --help' for more information.\n");
 				exit(EXIT_FAILURE);
 				break;
 		}
 	}
 
 	if(argc == 1) {
-		usage(1, 0, EXIT_FAILURE);
-		exit(EXIT_FAILURE);
+		usage(1, 0);
+		exit(EXIT_SUCCESS);
 	}
 
 	if(outfile == NULL && image_type == PNG_TYPE) {
