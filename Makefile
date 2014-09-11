@@ -28,15 +28,51 @@
 
 .PHONY: debug clean all 
 
-all: check
-	@echo "-------- Example: libQREncode -------"
-	cd libqrencode && "$(FLASCC)/usr/bin/swig" -as3  -I. -module QREncode -outdir . -includeall -ignoremissing as3api.h
-	cd libqrencode && $(ASC2) -import $(call nativepath,$(FLASCC)/usr/lib/builtin.abc) -import $(call nativepath,$(FLASCC)/usr/lib/playerglobal.abc) QREncode.as
-	cd libqrencode && "$(FLASCC)/usr/bin/gcc" $(BASE_CFLAGS) -Wno-error $(OPT_CFLAGS) as3api_wrap.c bitstream.c mask.c mmask.c mqrspec.c qrencode.c qrinput.c qrspec.c rscode.c split.c QREncode.abc -emit-swc=sample.qrencode -o ../qrencode.swc $(EXTRACFLAGS)
-	#@echo "Compiling test app using SWC:"
-	"$(FLEX)/bin/mxmlc" -library-path+=qrencode.swc Main.as -debug=$(MXMLC_DEBUG) -o qrencoder.swf
+# Detect host 
+$?UNAME=$(shell uname -s)
+#$(info $(UNAME))
+ifneq (,$(findstring CYGWIN,$(UNAME)))
+	$?nativepath=$(shell cygpath -at mixed $(1))
+	$?unixpath=$(shell cygpath -at unix $(1))
+else
+	$?nativepath=$(abspath $(1))
+	$?unixpath=$(abspath $(1))
+endif
 
-include Makefile.common
+# CrossBridge SDK Home
+ifneq "$(wildcard $(call unixpath,$(FLASCC_ROOT)/sdk))" ""
+ $?FLASCC:=$(call unixpath,$(FLASCC_ROOT)/sdk)
+else
+ $?FLASCC:=/path/to/crossbridge-sdk/
+endif
+$?ASC2=java -jar $(call nativepath,$(FLASCC)/usr/lib/asc2.jar) -merge -md -parallel
+ 
+# Auto Detect AIR/Flex SDKs
+ifneq "$(wildcard $(AIR_HOME)/lib/compiler.jar)" ""
+ $?FLEX=$(AIR_HOME)
+else
+ $?FLEX:=/path/to/adobe-air-sdk/
+endif
+
+all: clean
+# Init Phase
+	mkdir -p bin
+# Check Phase
+	@if [ -d $(FLASCC)/usr/bin ] ; then true ; \
+	else echo "Couldn't locate CrossBridge SDK directory, please invoke make with \"make FLASCC=/path/to/CrossBridge/ ...\"" ; exit 1 ; \
+	fi
+	@if [ -d "$(FLEX)/bin" ] ; then true ; \
+	else echo "Couldn't locate Adobe AIR or Apache Flex SDK directory, please invoke make with \"make FLEX=/path/to/AirOrFlex  ...\"" ; exit 1 ; \
+	fi
+	@echo "ASC2: $(ASC2)"
+# SWIG Phase
+	cd libqrencode && "$(FLASCC)/usr/bin/swig" -as3  -I. -module QREncode -outdir . -includeall -ignoremissing as3api.h
+# ABC Phase
+	cd libqrencode && $(ASC2) -import $(call nativepath,$(FLASCC)/usr/lib/builtin.abc) -import $(call nativepath,$(FLASCC)/usr/lib/playerglobal.abc) QREncode.as
+# SWC Phase
+	cd libqrencode && "$(FLASCC)/usr/bin/gcc" -Werror -Wno-write-strings -Wno-trigraphs -Wno-error -O4 as3api_wrap.c bitstream.c mask.c mmask.c mqrspec.c qrencode.c qrinput.c qrspec.c rscode.c split.c QREncode.abc -emit-swc=sample.qrencode -o ../bin/QREncode.swc $(EXTRACFLAGS)
+# SWF Phase
+	"$(FLEX)/bin/mxmlc" -library-path+=bin/QREncode.swc Main.as -debug=false -optimize -remove-dead-code -o bin/Main.swf
 
 clean:
-	rm -f qrencoder.swf qrencode.swc
+	rm -rf bin

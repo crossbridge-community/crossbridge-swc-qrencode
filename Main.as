@@ -1,8 +1,38 @@
+/*
+ * =BEGIN MIT LICENSE
+ * 
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 The CrossBridge Team
+ * https://github.com/crossbridge-community
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ * 
+ * =END MIT LICENSE
+ *
+ */
 package {
 import flash.display.Bitmap;
 import flash.display.BitmapData;
 import flash.events.Event;
 import flash.text.TextField;
+import flash.text.TextFieldType;
 
 import sample.qrencode.CModule;
 import sample.qrencode.*;
@@ -29,8 +59,18 @@ public class Main extends Sprite /*implements ISpecialFile*/ {
         //CModule.vfs.console = this
         CModule.startAsync(this)
 
+        srctext = new TextField();
+        srctext.type = TextFieldType.INPUT;
+        srctext.wordWrap = true;
+        srctext.multiline = true;
+        srctext.y = 300;
+        srctext.width = 800;
+        srctext.height = 300;
+        addChild(srctext);
+        srctext.text = "HelloQRCode";
+        
         uic = new Sprite()
-        addChild(uic)
+        addChild(uic)        
 
         runScript(null)
     }
@@ -44,7 +84,8 @@ public class Main extends Sprite /*implements ISpecialFile*/ {
         qrcode.swigCPtr = QREncode.QRcode_encodeString(srctext.text, vers, ecc, QREncode.QR_MODE_8, 1)
 
         if (qrcode.swigCPtr == 0 || qrcode.width <= 0) {
-            return
+            trace("QRError");
+            return;
         }
 
         var bmd:BitmapData = new BitmapData(qrcode.width, qrcode.width, false, 0xAAAAAA)
