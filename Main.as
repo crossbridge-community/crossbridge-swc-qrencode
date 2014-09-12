@@ -70,7 +70,11 @@ public class Main extends Sprite /*implements ISpecialFile*/ {
         srctext.text = "HelloQRCode";
         
         uic = new Sprite()
-        addChild(uic)        
+        addChild(uic)  
+
+        var stats:Stats = new Stats();
+        addChild(stats);
+        stats.x = 800 - stats.width;
 
         runScript(null)
     }
