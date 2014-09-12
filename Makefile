@@ -70,7 +70,7 @@ all: clean
 # ABC Phase
 	cd libqrencode && $(ASC2) -import $(call nativepath,$(FLASCC)/usr/lib/builtin.abc) -import $(call nativepath,$(FLASCC)/usr/lib/playerglobal.abc) QREncode.as
 # SWC Phase
-	cd libqrencode && "$(FLASCC)/usr/bin/gcc" -Werror -Wno-write-strings -Wno-trigraphs -Wno-error -O4 as3api_wrap.c bitstream.c mask.c mmask.c mqrspec.c qrencode.c qrinput.c qrspec.c rscode.c split.c QREncode.abc -emit-swc=sample.qrencode -o ../bin/QREncode.swc $(EXTRACFLAGS)
+	cd libqrencode && "$(FLASCC)/usr/bin/gcc" -Werror -Wno-write-strings -Wno-trigraphs -Wno-error -O4 as3api_wrap.c bitstream.c mask.c mmask.c mqrspec.c qrencode.c qrinput.c qrspec.c rscode.c split.c QREncode.abc -emit-swc=crossbridge.qrencode -o ../bin/QREncode.swc $(EXTRACFLAGS)
 # SWF Phase
 	"$(FLEX)/bin/mxmlc" -library-path+=bin/QREncode.swc Main.as -debug=false -optimize -remove-dead-code -o bin/Main.swf
 

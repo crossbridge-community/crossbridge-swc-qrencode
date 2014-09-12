@@ -28,63 +28,74 @@
  *
  */
 package {
+import flash.display.Stage;
+import flash.display.StageAlign;
+import flash.display.StageScaleMode;
 import flash.display.Bitmap;
 import flash.display.BitmapData;
 import flash.events.Event;
+import flash.events.KeyboardEvent;
 import flash.text.TextField;
 import flash.text.TextFieldType;
+import flash.text.TextFormatAlign;
+import flash.text.TextFormat;
+import flash.system.System;
 
-import sample.qrencode.CModule;
-import sample.qrencode.*;
-import sample.qrencode.vfs.ISpecialFile;
+import crossbridge.qrencode.CModule;
+import crossbridge.qrencode.*;
+import crossbridge.qrencode.vfs.ISpecialFile;
 
 import flash.display.Sprite;
 
-[SWF(width="800", height="600", backgroundColor="#333333", frameRate="60")]
-public class Main extends Sprite /*implements ISpecialFile*/ {
-
-    internal var uic:Sprite;
-    internal var bm:Bitmap;
-
-    private var srctext:TextField;
+[SWF(width="800", height="600", backgroundColor="#999999", frameRate="60")]
+public class Main extends Sprite implements ISpecialFile {
+    private var bm:Bitmap;
+    private var label:TextField;
 
     public function Main() {
-        addEventListener(Event.ADDED_TO_STAGE, appInit);
+        addEventListener(Event.ADDED_TO_STAGE, onAddedToStage, false, 0, true);
     }
 
-    internal function appInit(event:Event):void {
-        removeEventListener(Event.ADDED_TO_STAGE, appInit);
-
-        CModule.rootSprite = this
-        //CModule.vfs.console = this
-        CModule.startAsync(this)
-
-        srctext = new TextField();
-        srctext.type = TextFieldType.INPUT;
-        srctext.wordWrap = true;
-        srctext.multiline = true;
-        srctext.y = 300;
-        srctext.width = 800;
-        srctext.height = 300;
-        addChild(srctext);
-        srctext.text = "HelloQRCode";
+    private function onAddedToStage(event:Event):void {
+        stage.align = StageAlign.TOP_LEFT;
+        stage.scaleMode = StageScaleMode.NO_SCALE;
+        stage.frameRate = 60;
         
-        uic = new Sprite()
-        addChild(uic)  
+        removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
 
-        runScript(null)
+        CModule.rootSprite = this;
+        CModule.vfs.console = this;
+        CModule.startAsync(this);
+
+        var textFormat:TextFormat = new TextFormat("Arial", 14, 0xFFFFFF);
+        textFormat.align = TextFormatAlign.CENTER;
+        label = new TextField();
+        label.defaultTextFormat = textFormat;
+        label.type = TextFieldType.INPUT;
+        label.wordWrap = true;
+        label.multiline = true;
+        label.y = 0;
+        label.width = 800;
+        label.height = 30;
+        addChild(label);
+        label.text = "HelloQRCode";
+        label.addEventListener(KeyboardEvent.KEY_UP, runScript);
+        stage.focus = label;
+        
+        runScript(null);
     }
 
-    internal function runScript(event:Event):void {
+    private function runScript(event:Event):void {
         var qrcode:QRcode = QRcode.create()
         // vers: maximum="40" minimum="1" value="15" 
         // ecc: maximum="3" value="2" 
         var vers:int = 15;
         var ecc:int = 2;
-        qrcode.swigCPtr = QREncode.QRcode_encodeString(srctext.text, vers, ecc, QREncode.QR_MODE_8, 1)
+        //trace(errorCorrectionCodeName(ecc), "v" + vers);
+        qrcode.swigCPtr = QREncode.QRcode_encodeString(label.text, vers, ecc, QREncode.QR_MODE_8, 1)
 
         if (qrcode.swigCPtr == 0 || qrcode.width <= 0) {
-            trace("QRError");
+            throw new Error("QRCodeError");
             return;
         }
 
@@ -97,43 +108,98 @@ public class Main extends Sprite /*implements ISpecialFile*/ {
         }
 
         if (bm) {
-            uic.removeChild(bm)
+            bm.bitmapData.dispose();
+            removeChild(bm);
         }
-        bm = new Bitmap(bmd)
-        bm.smoothing = false
-        bm.scaleX = bm.scaleY = 2
-        uic.addChild(bm)
+        bm = new Bitmap(bmd);
+        // disable smoothing
+        bm.smoothing = false;
+        // scale up image
+        bm.scaleX = bm.scaleY = 4;
+        // center on stage
+        bm.x = (stage.stageWidth - bm.width) * 0.5;
+        bm.y = (stage.stageHeight - bm.height) * 0.5;
+        // add to display list
+        addChild(bm);
+        //trace(System.totalMemory);
     }
 
-    private function errorCorrectionCodeName(val:String):String {
+    private function errorCorrectionCodeName(val:int):String {
         switch (val) {
-            case "0":
+            case 0:
                 return "EC Level L"
-            case "1":
+            case 1:
                 return "EC Level M"
-            case "2":
+            case 2:
                 return "EC Level Q"
-            case "3":
+            case 3:
                 return "EC Level H"
         }
         return null
     }
+    
+    // Console implementation
 
-    private function versionTip(val:String):String {
-        return "Version: " + val
+    /**
+     * The callback to call when CrossBridge code calls the <code>posix exit()</code> function. Leave null to exit silently.
+     * @private
+     */
+    public var exitHook:Function;
+
+    /**
+     * The PlayerKernel implementation will use this function to handle
+     * C process exit requests
+     */
+    public function exit(code:int):Boolean {
+        trace("Main::exit: " + code);
+
+        // default to unhandled
+        if (exitHook != null)
+            return exitHook(code);
+        else
+            throw new Error("exit() called.");
     }
 
-    public function output(s:String):void {
-    }
-
-    public function write(fd:int, buf:int, nbyte:int, errno_ptr:int):int {
-        var str:String = CModule.readString(buf, nbyte);
-        output(str);
+    /**
+     * The PlayerKernel implementation uses this function to handle
+     * C IO write requests to the file "/dev/tty" (for example, output from
+     * printf will pass through this function). See the ISpecialFile
+     * documentation for more information about the arguments and return value.
+     */
+    public function write(fd:int, bufPtr:int, nbyte:int, errnoPtr:int):int {
+        var str:String = CModule.readString(bufPtr, nbyte);
+        trace(str);
         return nbyte;
     }
 
-    public function read(fd:int, buf:int, nbyte:int, errno_ptr:int):int {
-        return 0
+    /**
+     * The PlayerKernel implementation uses this function to handle
+     * C IO read requests to the file "/dev/tty" (for example, reads from stdin
+     * will expect this function to provide the data). See the ISpecialFile
+     * documentation for more information about the arguments and return value.
+     */
+    public function read(fd:int, bufPtr:int, nbyte:int, errnoPtr:int):int {
+        return 0;
+    }
+
+    /**
+     * The PlayerKernel implementation uses this function to handle
+     * C fcntl requests to the file "/dev/tty."
+     * See the ISpecialFile documentation for more information about the
+     * arguments and return value.
+     */
+    public function fcntl(fd:int, com:int, data:int, errnoPtr:int):int {
+        return 0;
+    }
+
+    /**
+     * The PlayerKernel implementation uses this function to handle
+     * C ioctl requests to the file "/dev/tty."
+     * See the ISpecialFile documentation for more information about the
+     * arguments and return value.
+     */
+    public function ioctl(fd:int, com:int, data:int, errnoPtr:int):int {
+        return CModule.callI(CModule.getPublicSymbol("vglttyioctl"), new <int>[fd, com, data, errnoPtr]);
     }
 }
 }
