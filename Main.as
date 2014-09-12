@@ -72,10 +72,6 @@ public class Main extends Sprite /*implements ISpecialFile*/ {
         uic = new Sprite()
         addChild(uic)  
 
-        var stats:Stats = new Stats();
-        addChild(stats);
-        stats.x = 800 - stats.width;
-
         runScript(null)
     }
 
