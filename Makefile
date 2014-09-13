@@ -62,7 +62,7 @@ all: clean init check
 # SWC Phase
 	cd libqrencode && "$(FLASCC)/usr/bin/gcc" -Werror -Wno-write-strings -Wno-trigraphs -Wno-error -O4 as3api_wrap.c bitstream.c mask.c mmask.c mqrspec.c qrencode.c qrinput.c qrspec.c rscode.c split.c QREncode.abc -emit-swc=crossbridge.qrencode -o ../release/crossbridge-qrencode.swc $(EXTRACFLAGS)
 # SWF Phase
-	"$(FLEX)/bin/mxmlc" -library-path+=release/crossbridge-qrencode.swc Main.as -debug=false -optimize -remove-dead-code -o bin/Main.swf
+	"$(FLEX)/bin/mxmlc" -library-path+=release/crossbridge-qrencode.swc src/main/actionscript/Main.as -debug=false -optimize -remove-dead-code -o bin/Main.swf
 
 check:
 	@if [ -d $(FLASCC)/usr/bin ] ; then true ; \
