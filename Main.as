@@ -78,7 +78,7 @@ public class Main extends Sprite implements ISpecialFile {
         label.width = 800;
         label.height = 30;
         addChild(label);
-        label.text = "HelloQRCode";
+        label.text = "ClickAndEditTheText";
         label.addEventListener(KeyboardEvent.KEY_UP, runScript);
         stage.focus = label;
         
