@@ -28,29 +28,27 @@
  *
  */
 package {
-import flash.display.Stage;
-import flash.display.StageAlign;
-import flash.display.StageScaleMode;
-import flash.display.Bitmap;
-import flash.display.BitmapData;
-import flash.events.Event;
-import flash.events.KeyboardEvent;
-import flash.text.TextField;
-import flash.text.TextFieldType;
-import flash.text.TextFormatAlign;
-import flash.text.TextFormat;
-import flash.system.System;
-
 import crossbridge.qrencode.CModule;
-import crossbridge.qrencode.*;
 import crossbridge.qrencode.vfs.ISpecialFile;
 
+import flash.display.Bitmap;
+import flash.display.BitmapData;
 import flash.display.Sprite;
+import flash.display.StageAlign;
+import flash.display.StageScaleMode;
+import flash.events.Event;
+import flash.events.KeyboardEvent;
+import flash.system.System;
+import flash.text.TextField;
+import flash.text.TextFieldType;
+import flash.text.TextFormat;
+import flash.text.TextFormatAlign;
 
 [SWF(width="800", height="600", backgroundColor="#999999", frameRate="60")]
 public class Main extends Sprite implements ISpecialFile {
     private var bm:Bitmap;
     private var label:TextField;
+    private var label2:TextField;
 
     public function Main() {
         addEventListener(Event.ADDED_TO_STAGE, onAddedToStage, false, 0, true);
@@ -60,29 +58,37 @@ public class Main extends Sprite implements ISpecialFile {
         stage.align = StageAlign.TOP_LEFT;
         stage.scaleMode = StageScaleMode.NO_SCALE;
         stage.frameRate = 60;
-        
+
         removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
 
         CModule.rootSprite = this;
         CModule.vfs.console = this;
         CModule.startAsync(this);
 
+        label = createTextField(0, 0, 800, 30, "ClickAndEditTheText");
+        label.addEventListener(KeyboardEvent.KEY_UP, runScript);
+        stage.focus = label;
+
+        label2 = createTextField(0, 570, 800, 30, "");
+
+        runScript(null);
+    }
+
+    private function createTextField(x:int, y:int, w:int, h:int, text:String):TextField {
         var textFormat:TextFormat = new TextFormat("Arial", 14, 0xFFFFFF);
         textFormat.align = TextFormatAlign.CENTER;
-        label = new TextField();
+        var label:TextField = new TextField();
         label.defaultTextFormat = textFormat;
         label.type = TextFieldType.INPUT;
         label.wordWrap = true;
         label.multiline = true;
-        label.y = 0;
-        label.width = 800;
-        label.height = 30;
+        label.x = x;
+        label.y = y;
+        label.width = w;
+        label.height = h;
         addChild(label);
-        label.text = "ClickAndEditTheText";
-        label.addEventListener(KeyboardEvent.KEY_UP, runScript);
-        stage.focus = label;
-        
-        runScript(null);
+        label.text = text;
+        return label;
     }
 
     private function runScript(event:Event):void {
@@ -121,7 +127,10 @@ public class Main extends Sprite implements ISpecialFile {
         bm.y = (stage.stageHeight - bm.height) * 0.5;
         // add to display list
         addChild(bm);
-        //trace(System.totalMemory);
+
+        const mem:Number = Number((System.totalMemoryNumber * 0.000000954).toFixed(3));
+        label2.text = mem + "Mb";
+        System.pauseForGCIfCollectionImminent();
     }
 
     private function errorCorrectionCodeName(val:int):String {
@@ -137,7 +146,7 @@ public class Main extends Sprite implements ISpecialFile {
         }
         return null
     }
-    
+
     // Console implementation
 
     /**
