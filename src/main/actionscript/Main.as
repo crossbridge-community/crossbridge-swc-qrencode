@@ -43,6 +43,7 @@ import flash.text.TextField;
 import flash.text.TextFieldType;
 import flash.text.TextFormat;
 import flash.text.TextFormatAlign;
+import flash.utils.getTimer;
 
 [SWF(width="800", height="600", backgroundColor="#999999", frameRate="60")]
 public class Main extends Sprite implements ISpecialFile {
@@ -92,6 +93,7 @@ public class Main extends Sprite implements ISpecialFile {
     }
 
     private function runScript(event:Event):void {
+        var startTime:int = getTimer();
         var qrcode:QRcode = QRcode.create()
         // vers: maximum="40" minimum="1" value="15" 
         // ecc: maximum="3" value="2" 
@@ -116,20 +118,22 @@ public class Main extends Sprite implements ISpecialFile {
         if (bm) {
             bm.bitmapData.dispose();
             removeChild(bm);
+            bm = null;
         }
         bm = new Bitmap(bmd);
         // disable smoothing
         bm.smoothing = false;
         // scale up image
-        bm.scaleX = bm.scaleY = 4;
+        bm.scaleX = bm.scaleY = 5;
         // center on stage
         bm.x = (stage.stageWidth - bm.width) * 0.5;
         bm.y = (stage.stageHeight - bm.height) * 0.5;
         // add to display list
         addChild(bm);
 
+        var calcTime:int = getTimer() - startTime;
         const mem:Number = Number((System.totalMemoryNumber * 0.000000954).toFixed(3));
-        label2.text = mem + "Mb";
+        label2.text = "Render time: " + calcTime + "ms | System Memory: " + mem + "Mb";
         System.pauseForGCIfCollectionImminent();
     }
 
